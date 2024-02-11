@@ -1,5 +1,7 @@
 import { Markup } from "telegraf";
 import { BotContext } from "../context";
+import { monthSlot } from "./Calendat.types";
+import { SceneContext } from "telegraf/typings/scenes";
 
 const monthNames = [
     'Січень',
@@ -25,20 +27,6 @@ const weekDayAbbrevs = [
     'Сб',
     'Нд',
 ];
-
-type timeSlot = {
-    time: string // hh:mm
-}
-
-type dateSlot = {
-    date: number,
-    timeSlots: timeSlot[]
-}
-
-type monthSlot = {
-    month: number,
-    dateSlots: dateSlot[]
-}
 
 enum State {
     date = 'd',
@@ -171,35 +159,28 @@ export default class Calendar {
         const body = [];
 
         if (this.state === State.date) {
-            // const weekRow = weekDayAbbrevs.map(dayName => Markup.button.callback(`${dayName}`, ' '));
-            // body.push(weekRow);
+            const weekRow = weekDayAbbrevs.map(dayName => Markup.button.callback(`${dayName}`, ' '));
+            body.push(weekRow);
 
             const dates = this.slots[this.currentMonthIdx].dateSlots;
 
-            // const firstDate = new Date();
-            // firstDate.setMonth(this.slots[this.currentMonthIdx].month - 1);
-            // firstDate.setDate(1);
-            // const firstDay = (firstDate.getDay() + 6) % 7;
+            const firstDate = new Date();
+            firstDate.setMonth(this.slots[this.currentMonthIdx].month);
+            firstDate.setDate(1);
+            const firstWeekDay = (firstDate.getDay() + 6) % 7;
+            const dateRowsCount = Math.ceil((dates[dates.length - 1].date + firstWeekDay) / 7);
 
-            // Array.from({length: 6}).forEach((_, rowIdx) => {
-            //     const row = Array.from({length: 7}, (_, i) => {
-            //         if (rowIdx === 0 && i < firstDay) return Markup.button.callback(` `, ' ');
-                    
-            //     })
+            for (let rowIdx = 0; rowIdx < dateRowsCount; rowIdx++) {
+                const row = Array.from({length: 7}, (_, i) => {
+                    const buttonDate = (i + 1) + (7 * rowIdx) - firstWeekDay;
 
-            //     body.push(row);
-            // })
-
-            // const row = Array.from({length: 7}, (_, i) => {
-            //     if (i < firstDay) return Markup.button.callback(` `, ' ');
-                
-            // })
-            
-            const rowSize = Math.min(this.maxDatesRow, Math.ceil(dates.length / 2));
-            for (let i = 0; i < dates.length; i += rowSize) {
-                const row = dates.slice(i, i + rowSize).map(el => {
-                    return Markup.button.callback(`${el.date}`, this.cb(Action.select, el.date));
+                    if (dates.find(el => el.date === buttonDate)) {
+                        return Markup.button.callback(`${buttonDate}`, this.cb(Action.select, buttonDate));
+                    } else {
+                        return Markup.button.callback(` `, ' ');
+                    }
                 });
+
                 body.push(row);
             }
         }
